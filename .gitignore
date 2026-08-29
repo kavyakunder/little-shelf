@@ -1,0 +1,4 @@
+node_modules
+.next
+data/books.json
+.env*.local
