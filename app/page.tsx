@@ -12,6 +12,7 @@ import {
 import BookCard from "@/components/BookCard";
 import BookForm from "@/components/BookForm";
 import BookModal from "@/components/BookModal";
+import { HARDCODED_RECOMMENDATIONS } from "./books";
 
 /*
  * Free-to-use photos (Unsplash License, no attribution required) for
@@ -20,7 +21,7 @@ import BookModal from "@/components/BookModal";
  */
 const MOOD_PHOTOS = [
   {
-    src: "https://images.unsplash.com/photo-1752824 250580-163f1532b1d0?auto=format&fit=crop&w=500&q=80",
+    src: "https://images.unsplash.com/photo-1752824250580-163f1532b1d0?auto=format&fit=crop&w=500&q=80",
     caption: "cozy corners",
     tilt: "-rotate-6",
   },
@@ -56,6 +57,32 @@ export default function Home() {
   // Gentle mouse-parallax tilt for the reading-room illustration.
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
+  const [roomFlipped, setRoomFlipped] = useState(false);
+
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  // pick the first book with status "reading" — adjust the sort/pick if you want
+  // a specific one (e.g. most recently updated) rather than just the first match
+  const currentlyReading = books.find((b) => b.status === "reading");
+
+  const latestRead = [...books].reverse().find((b) => b.status === "read");
+
+  console.log("booksss", books);
+
+  const quickestRead = books
+    .filter((book) => book.status === "read" && book.readingDays != null)
+    .reduce<{ book: Book; days: number } | undefined>((quickest, book) => {
+      if (!quickest || (book.readingDays ?? Infinity) < quickest.days) {
+        return {
+          book,
+          days: book.readingDays!,
+        };
+      }
+
+      return quickest;
+    }, undefined);
+  const topRated = books
+    .filter((b) => b.status === "read" && b.rating)
+    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))[0];
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -212,38 +239,13 @@ export default function Home() {
 
             <div>
               <h1 className="font-serif text-2xl tracking-tight">
-                My Little Shelf
+                Little Shelf
               </h1>
 
               <p className="text-[11px] text-[#49373d]/40">
                 a home for your stories ♡
               </p>
             </div>
-          </div>
-
-          {/* Header actions */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={surpriseBook}
-              disabled={!books.length}
-              className="hidden rounded-full border border-[#efd6de] bg-white/70 px-4 py-2 text-xs font-medium text-[#c95778] transition hover:-translate-y-0.5 hover:bg-[#fff0f4] disabled:cursor-not-allowed disabled:opacity-40 sm:block">
-              🎲 Surprise me
-            </button>
-
-            <button
-              onClick={() => {
-                setEditingBook(null);
-                setShowForm(true);
-              }}
-              className="group flex items-center gap-2 rounded-full bg-[#d96b87] px-4 py-2.5 text-sm font-medium text-white shadow-[0_5px_18px_rgba(217,107,135,0.25)] transition hover:-translate-y-0.5 hover:bg-[#c95778] hover:shadow-lg active:scale-95">
-              <span className="text-lg transition-transform duration-300 group-hover:rotate-90">
-                +
-              </span>
-
-              <span className="hidden sm:inline">Add a book</span>
-
-              <span className="sm:hidden">Add</span>
-            </button>
           </div>
         </div>
       </header>
@@ -292,7 +294,7 @@ export default function Home() {
                 </button>
 
                 <button
-                  onClick={surpriseBook}
+                  onClick={() => setShowRecommendations((v) => !v)}
                   disabled={!books.length}
                   className="rounded-full border border-[#efd6de] bg-white/70 px-5 py-2.5 text-sm text-[#c95778] transition hover:-translate-y-0.5 hover:bg-[#fff0f4] disabled:opacity-40">
                   🎀 Pick one for me
@@ -300,89 +302,172 @@ export default function Home() {
               </div>
             </div>
 
+            {showRecommendations && (
+              <RecommendationModal
+                recommendations={HARDCODED_RECOMMENDATIONS}
+                onClose={() => setShowRecommendations(false)}
+              />
+            )}
             {/* little reading room — now with a gentle parallax tilt */}
             <div
               className="relative mx-auto w-full max-w-[290px]"
-              style={{ perspective: "900px" }}
-              onMouseMove={handleRoomMouseMove}
-              onMouseLeave={handleRoomMouseLeave}>
+              style={{ perspective: "900px" }}>
               <div
-                className="relative h-[290px] overflow-hidden rounded-[38px] border border-[#f0d5dd] bg-[#fdebef] shadow-[0_20px_50px_rgba(217,107,135,0.10)]"
+                className="relative h-[290px] transition-transform duration-[600ms]"
                 style={{
-                  transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-                  transition: "transform 150ms ease-out",
                   transformStyle: "preserve-3d",
+                  transform: `rotateY(${roomFlipped ? 180 : 0}deg)`,
                 }}>
-                {/* window */}
-                <div className="absolute left-8 top-7 h-[105px] w-[100px] rounded-t-full border-[6px] border-[#e4a9b8] bg-[#f9dfe6]">
-                  <div className="absolute left-1/2 top-0 h-full w-[3px] -translate-x-1/2 bg-[#e4a9b8]" />
-                  <div className="absolute left-0 top-1/2 h-[3px] w-full -translate-y-1/2 bg-[#e4a9b8]" />
+                {/* ============================================================
+        FRONT — the room, unchanged, still tilts on mouse move
+    ============================================================ */}
+                <div
+                  className="absolute inset-0 overflow-hidden rounded-[38px] border border-[#f0d5dd] bg-[#fdebef] shadow-[0_20px_50px_rgba(217,107,135,0.10)]"
+                  style={{
+                    backfaceVisibility: "hidden",
+                    transformStyle: "preserve-3d",
+                    transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+                    transition: "transform 150ms ease-out",
+                  }}
+                  onMouseMove={(e) => !roomFlipped && handleRoomMouseMove(e)}
+                  onMouseLeave={handleRoomMouseLeave}>
+                  {/* window */}
+                  <div className="absolute left-8 top-7 h-[105px] w-[100px] rounded-t-full border-[6px] border-[#e4a9b8] bg-[#f9dfe6]">
+                    <div className="absolute left-1/2 top-0 h-full w-[3px] -translate-x-1/2 bg-[#e4a9b8]" />
+                    <div className="absolute left-0 top-1/2 h-[3px] w-full -translate-y-1/2 bg-[#e4a9b8]" />
+                    <span className="absolute -right-5 top-2 text-lg">☁️</span>
+                  </div>
 
-                  <span className="absolute -right-5 top-2 text-lg">☁️</span>
+                  {/* lamp, with a soft breathing glow */}
+                  <div className="absolute right-8 top-12">
+                    <span
+                      aria-hidden
+                      className="absolute -left-4 -top-4 h-16 w-16 rounded-full bg-[#ffe3ea] blur-xl"
+                      style={{
+                        animation: "lamp-glow 3.2s ease-in-out infinite",
+                      }}
+                    />
+                    <div className="relative mx-auto h-12 w-12 rounded-t-full bg-[#f4c2ce]" />
+                    <div className="relative mx-auto h-16 w-1 bg-[#c98a9d]" />
+                    <div className="relative mx-auto h-2 w-12 rounded-full bg-[#c98a9d]" />
+                  </div>
+
+                  {/* plant */}
+                  <div className="absolute bottom-9 left-7">
+                    <div className="mx-auto h-14 w-10 rounded-b-xl rounded-t-[50%] bg-[#d99aa9]" />
+                    <span className="absolute -left-4 -top-7 text-2xl">🌿</span>
+                  </div>
+
+                  {/* chair */}
+                  <div className="absolute bottom-7 right-8">
+                    <div className="h-20 w-20 rounded-t-[35px] bg-[#d77d96]" />
+                    <div className="absolute -bottom-5 left-2 h-7 w-3 bg-[#ad6c7e]" />
+                    <div className="absolute -bottom-5 right-2 h-7 w-3 bg-[#ad6c7e]" />
+                  </div>
+
+                  {/* book — click it to see what you're actually reading */}
+                  <button
+                    type="button"
+                    onClick={() => setRoomFlipped(true)}
+                    aria-label="See the cover of what you're currently reading"
+                    className="absolute bottom-10 left-1/2 cursor-pointer transition-transform hover:scale-110"
+                    style={{
+                      animation: "book-breathe 5s ease-in-out infinite",
+                    }}>
+                    <div className="relative h-12 w-16 rounded-r-md rounded-l-sm bg-[#fffafc] shadow-md">
+                      <div className="absolute left-2 top-3 h-1 w-9 rounded bg-[#e7b2c0]" />
+                      <div className="absolute left-2 top-6 h-1 w-6 rounded bg-[#f0ced7]" />
+                    </div>
+                  </button>
+
+                  {/* drifting dust motes */}
+                  <span
+                    className="absolute left-[30%] top-[55%] h-1 w-1 rounded-full bg-[#e7b2c0]"
+                    style={{
+                      animation: "dust-float 4.5s ease-in-out infinite",
+                    }}
+                  />
+                  <span
+                    className="absolute left-[60%] top-[62%] h-1 w-1 rounded-full bg-[#e7b2c0]"
+                    style={{
+                      animation: "dust-float 5.5s ease-in-out infinite 1.5s",
+                    }}
+                  />
+                  <span
+                    className="absolute left-[45%] top-[70%] h-[3px] w-[3px] rounded-full bg-[#e7b2c0]"
+                    style={{
+                      animation: "dust-float 6.5s ease-in-out infinite 3s",
+                    }}
+                  />
+
+                  {/* decorations */}
+                  <span className="absolute right-5 top-5 text-sm">✨</span>
+                  <span className="absolute bottom-4 left-[42%] text-xs">
+                    ♡
+                  </span>
                 </div>
 
-                {/* lamp, with a soft breathing glow */}
-                <div className="absolute right-8 top-12">
+                {/* ============================================================
+        BACK — the actual cover of what you're currently reading
+    ============================================================ */}
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden rounded-[38px] border border-[#f0d5dd] bg-[#fdebef] p-6 shadow-[0_20px_50px_rgba(217,107,135,0.10)]"
+                  style={{
+                    backfaceVisibility: "hidden",
+                    transform: "rotateY(180deg)",
+                  }}>
                   <span
                     aria-hidden
-                    className="absolute -left-4 -top-4 h-16 w-16 rounded-full bg-[#ffe3ea] blur-xl"
-                    style={{ animation: "lamp-glow 3.2s ease-in-out infinite" }}
+                    className="absolute left-1/2 top-10 h-24 w-24 -translate-x-1/2 rounded-full bg-[#ffe3ea] blur-2xl"
                   />
-                  <div className="relative mx-auto h-12 w-12 rounded-t-full bg-[#f4c2ce]" />
-                  <div className="relative mx-auto h-16 w-1 bg-[#c98a9d]" />
-                  <div className="relative mx-auto h-2 w-12 rounded-full bg-[#c98a9d]" />
+
+                  {currentlyReading ? (
+                    <>
+                      <div className="relative h-32 w-24 overflow-hidden rounded-md shadow-lg">
+                        {currentlyReading.coverUrl ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={currentlyReading.coverUrl}
+                            alt={currentlyReading.title}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#d96b87] to-[#d96b87]/70">
+                            <span className="font-serif text-3xl text-white/50">
+                              {currentlyReading.title.charAt(0)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="mt-4 max-w-[85%] text-center font-serif text-base leading-tight text-[#49373d]">
+                        {currentlyReading.title}
+                      </p>
+                      <p className="font-hand mt-1 text-sm text-[#c95778]">
+                        by {currentlyReading.author}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-4xl">📖</span>
+                      <p className="font-hand mt-3 text-center text-base text-[#c95778]">
+                        nothing in progress right now
+                      </p>
+                    </>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setRoomFlipped(false)}
+                    className="mt-5 rounded-full border border-[#efd6de] bg-white/70 px-4 py-1.5 text-xs text-[#c95778] transition hover:-translate-y-0.5 hover:bg-white">
+                    ← back to the room
+                  </button>
                 </div>
-
-                {/* plant */}
-                <div className="absolute bottom-9 left-7">
-                  <div className="mx-auto h-14 w-10 rounded-b-xl rounded-t-[50%] bg-[#d99aa9]" />
-                  <span className="absolute -left-4 -top-7 text-2xl">🌿</span>
-                </div>
-
-                {/* chair */}
-                <div className="absolute bottom-7 right-8">
-                  <div className="h-20 w-20 rounded-t-[35px] bg-[#d77d96]" />
-                  <div className="absolute -bottom-5 left-2 h-7 w-3 bg-[#ad6c7e]" />
-                  <div className="absolute -bottom-5 right-2 h-7 w-3 bg-[#ad6c7e]" />
-                </div>
-
-                {/* book — a slow, barely-there breathing sway */}
-                <div
-                  className="absolute bottom-10 left-1/2"
-                  style={{ animation: "book-breathe 5s ease-in-out infinite" }}>
-                  <div className="relative h-12 w-16 rounded-r-md rounded-l-sm bg-[#fffafc] shadow-md">
-                    <div className="absolute left-2 top-3 h-1 w-9 rounded bg-[#e7b2c0]" />
-                    <div className="absolute left-2 top-6 h-1 w-6 rounded bg-[#f0ced7]" />
-                  </div>
-                </div>
-
-                {/* drifting dust motes */}
-                <span
-                  className="absolute left-[30%] top-[55%] h-1 w-1 rounded-full bg-[#e7b2c0]"
-                  style={{ animation: "dust-float 4.5s ease-in-out infinite" }}
-                />
-                <span
-                  className="absolute left-[60%] top-[62%] h-1 w-1 rounded-full bg-[#e7b2c0]"
-                  style={{
-                    animation: "dust-float 5.5s ease-in-out infinite 1.5s",
-                  }}
-                />
-                <span
-                  className="absolute left-[45%] top-[70%] h-[3px] w-[3px] rounded-full bg-[#e7b2c0]"
-                  style={{
-                    animation: "dust-float 6.5s ease-in-out infinite 3s",
-                  }}
-                />
-
-                {/* decorations */}
-                <span className="absolute right-5 top-5 text-sm">✨</span>
-
-                <span className="absolute bottom-4 left-[42%] text-xs">♡</span>
               </div>
 
               <div className="absolute -bottom-3 -right-3 rounded-2xl border border-[#f0d5dd] bg-white px-4 py-2 shadow-md">
                 <span className="font-hand text-sm text-[#49373d]/60">
-                  currently reading ♡
+                  {"currently reading ♡"}
                 </span>
               </div>
             </div>
@@ -407,7 +492,7 @@ export default function Home() {
               <span className="text-xs text-[#49373d]/30">keep going ✨</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {/* <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <TotalMilestone value={stats.total} books={books} />
 
               <Milestone
@@ -428,6 +513,12 @@ export default function Home() {
                 value={stats.avgRating || "—"}
                 label="average rating"
               />
+            </div> */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <TotalMilestone value={stats.total} books={books} />
+              <LatestReadMilestone book={latestRead} />
+              <QuickestReadMilestone entry={quickestRead} />
+              <TopRatedMilestone book={topRated} />
             </div>
           </section>
         )}
@@ -598,6 +689,130 @@ export default function Home() {
    MILESTONE
 ================================================================ */
 
+/* ===============================================================
+   RECOMMENDATION MODAL — loads for a beat, then reveals picks
+================================================================ */
+
+function RecommendationModal({
+  recommendations,
+  onClose,
+}: {
+  recommendations: typeof HARDCODED_RECOMMENDATIONS;
+  onClose: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1825]/50 p-4 backdrop-blur-md sm:p-6"
+      onClick={onClose}>
+      <div
+        className="relative w-full max-w-3xl rounded-[30px] border border-[#f0d5dd] bg-[#fffafc] p-7 shadow-[0_30px_80px_rgba(217,107,135,0.25)] sm:p-9"
+        onClick={(e) => e.stopPropagation()}>
+        {/* CLOSE */}
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center rounded-full bg-[#f9edf2] text-[#8d6272] transition hover:bg-[#f4dce6]">
+          ×
+        </button>
+
+        {/* HEADER */}
+        <div className="pr-10">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[#d96b87]">
+            picked for you
+          </p>
+
+          <h3 className="mt-1 font-serif text-2xl text-[#49373d] sm:text-3xl">
+            {loading
+              ? "Finding your next read..."
+              : "Because of what you've read"}
+          </h3>
+
+          {!loading && (
+            <p className="mt-1 text-xs text-[#49373d]/40">
+              Three little stories that might belong on your shelf next ♡
+            </p>
+          )}
+        </div>
+
+        {/* LOADING */}
+        {loading ? (
+          <div className="flex flex-col items-center py-16">
+            <div className="relative mb-4 flex h-16 w-16 animate-pulse items-center justify-center rounded-full bg-[#fde1e8] text-3xl">
+              📚
+            </div>
+
+            <p className="font-hand text-base text-[#c95778]">
+              flipping through pages ✨
+            </p>
+          </div>
+        ) : (
+          /* THREE RECOMMENDATIONS */
+          <div className="mt-7 grid grid-cols-3 gap-5">
+            {recommendations.map((rec, i) => (
+              <div
+                key={`${rec.title}::${rec.author}`}
+                className="card-rise group rounded-[20px] border border-[#f0dce2] bg-white/70 p-3.5 transition-all duration-300 hover:-translate-y-1 hover:border-[#e8b8c6] hover:bg-white hover:shadow-[0_12px_28px_rgba(217,107,135,0.12)]"
+                style={{ animationDelay: `${i * 100}ms` }}>
+                {/* COVER */}
+                <div className="h-60 w-full overflow-hidden rounded-xl bg-[#fdebef] shadow-md">
+                  {rec.coverUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={rec.coverUrl}
+                      alt={rec.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#d96b87] to-[#d96b87]/70">
+                      <span className="font-serif text-3xl text-white/50">
+                        {rec.title.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* TITLE */}
+                <p className="mt-3 line-clamp-2 font-serif text-sm leading-snug text-[#49373d]">
+                  {rec.title}
+                </p>
+
+                {/* AUTHOR */}
+                <p className="mt-1 line-clamp-1 text-[10px] text-[#49373d]/40">
+                  {rec.author}
+                </p>
+
+                {/* REASON */}
+                <p className="font-hand mt-2 line-clamp-2 text-xs leading-4 text-[#c95778]">
+                  {rec.reason}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* FOOTER */}
+        {!loading && (
+          <div className="mt-7 flex items-center justify-center gap-3 text-[#e4a0b2]">
+            <span>✦</span>
+
+            <span className="font-hand text-sm text-[#c95778]/60">
+              one of these might be your next little obsession ♡
+            </span>
+
+            <span>✦</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 function Milestone({
   icon,
   value,
@@ -641,6 +856,126 @@ function Milestone({
    TOTAL MILESTONE — flips over on tap to peek at your shelf
 ================================================================ */
 
+// function TotalMilestone({ value, books }: { value: number; books: Book[] }) {
+//   const [flipped, setFlipped] = useState(false);
+//   const [hearts, setHearts] = useState<{ id: number; left: number }[]>([]);
+
+//   const preview = books.slice(0, 4);
+
+//   const handleClick = () => {
+//     setFlipped((f) => !f);
+
+//     // little heart burst, purely for delight
+//     const burst = Array.from({ length: 5 }, () => ({
+//       id: Math.random(),
+//       left: 20 + Math.random() * 60,
+//     }));
+//     setHearts((h) => [...h, ...burst]);
+//   };
+
+//   const removeHeart = (id: number) =>
+//     setHearts((h) => h.filter((heart) => heart.id !== id));
+
+//   return (
+//     <button
+//       onClick={handleClick}
+//       aria-label="Peek at your shelf"
+//       className="relative block w-full text-left [perspective:900px]">
+//       {hearts.map((heart) => (
+//         <span
+//           key={heart.id}
+//           onAnimationEnd={() => removeHeart(heart.id)}
+//           className="pointer-events-none absolute bottom-2 z-20 text-sm text-[#d96b87]"
+//           style={{
+//             left: `${heart.left}%`,
+//             animation: "heart-pop 900ms ease-out forwards",
+//           }}>
+//           ♡
+//         </span>
+//       ))}
+
+//       <div
+//         className="relative h-[150px] transition-transform duration-500"
+//         style={{
+//           transformStyle: "preserve-3d",
+//           transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+//         }}>
+//         {/* FRONT */}
+//         {/* FRONT */}
+//         <div
+//           className="group absolute inset-0 overflow-hidden rounded-[22px]
+//     border border-[#f0dce2]
+//     bg-white/65
+//     p-5
+//     transition-colors duration-300
+//     hover:bg-[#fff0f4]"
+//           style={{ backfaceVisibility: "hidden" }}>
+//           {/* decorative books */}
+//           <div className="absolute -right-5 -top-5 text-6xl opacity-[0.035]">
+//             📚
+//           </div>
+
+//           <div className="flex items-center justify-between">
+//             <span className="text-xl">📚</span>
+//           </div>
+
+//           <div className="mt-3 flex items-baseline gap-2">
+//             <span className="font-serif text-3xl">{value}</span>
+//           </div>
+
+//           <p className="mt-1 max-w-[170px] text-[11px] leading-4 text-[#49373d]/45">
+//             little stories have found a home here ♡
+//           </p>
+
+//           <p className="font-hand absolute bottom-2 right-3 text-xs text-[#d96b87]/60">
+//             tap to peek ✨
+//           </p>
+//         </div>
+
+//         {/* BACK */}
+//         <div
+//           className="absolute inset-0 overflow-hidden rounded-[22px] border border-[#efc7d2] bg-[#fff0f4] p-4"
+//           style={{
+//             backfaceVisibility: "hidden",
+//             transform: "rotateY(180deg)",
+//           }}>
+//           <p className="text-center font-hand text-sm text-[#c95778]">
+//             your shelf ♡
+//           </p>
+
+//           {preview.length > 0 ? (
+//             <div className="mt-2 flex -space-x-3 justify-center">
+//               {preview.map((book, i) => (
+//                 <div
+//                   key={book.id}
+//                   className="h-14 w-10 shrink-0 overflow-hidden rounded-md border-2 border-white shadow-md"
+//                   style={{
+//                     transform: `rotate(${(i - (preview.length - 1) / 2) * 9}deg)`,
+//                     zIndex: preview.length - i,
+//                   }}>
+//                   {/* eslint-disable-next-line @next/next/no-img-element */}
+//                   <img
+//                     src={book.coverUrl || FALLBACK_COVER}
+//                     alt={book.title}
+//                     className="h-full w-full object-cover"
+//                   />
+//                 </div>
+//               ))}
+//             </div>
+//           ) : (
+//             <p className="mt-3 text-center text-xs text-[#49373d]/35">
+//               nothing here yet ♡
+//             </p>
+//           )}
+
+//           <p className="mt-3 text-center text-[10px] text-[#49373d]/35">
+//             tap to flip back
+//           </p>
+//         </div>
+//       </div>
+//     </button>
+//   );
+// }
 function TotalMilestone({ value, books }: { value: number; books: Book[] }) {
   const [flipped, setFlipped] = useState(false);
   const [hearts, setHearts] = useState<{ id: number; left: number }[]>([]);
@@ -650,11 +985,11 @@ function TotalMilestone({ value, books }: { value: number; books: Book[] }) {
   const handleClick = () => {
     setFlipped((f) => !f);
 
-    // little heart burst, purely for delight
     const burst = Array.from({ length: 5 }, () => ({
       id: Math.random(),
       left: 20 + Math.random() * 60,
     }));
+
     setHearts((h) => [...h, ...burst]);
   };
 
@@ -687,46 +1022,55 @@ function TotalMilestone({ value, books }: { value: number; books: Book[] }) {
         }}>
         {/* FRONT */}
         <div
-          className="group absolute inset-0 overflow-hidden rounded-[22px] border border-[#f0dce2] bg-white/65 p-5 transition-colors duration-300 hover:bg-[#fff0f4]"
+          className="group absolute inset-0 overflow-hidden rounded-[22px]
+            border border-[#f0dce2]
+            bg-white/65
+            p-5
+            transition-colors duration-300
+            hover:bg-[#fff0f4]"
           style={{ backfaceVisibility: "hidden" }}>
           <div className="absolute -right-5 -top-5 text-6xl opacity-[0.035]">
             📚
           </div>
 
-          <div className="flex items-center justify-between">
-            <span className="text-xl">📚</span>
-          </div>
+          <span className="text-xl">📚</span>
 
-          <div className="mt-3 font-serif text-3xl">{value}</div>
-
-          <p className="mt-1 text-[11px] text-[#49373d]/40">
-            stories collected
+          <p className="mt-3 font-serif text-[17px] leading-snug">
+            {value} stories
+            <br />
+            <span className="italic text-[#d96b87]">found their way home.</span>
           </p>
 
           <p className="font-hand absolute bottom-2 right-3 text-xs text-[#d96b87]/60">
-            tap to peek ✨
+            peek inside → ✨
           </p>
         </div>
 
         {/* BACK */}
         <div
-          className="absolute inset-0 overflow-hidden rounded-[22px] border border-[#efc7d2] bg-[#fff0f4] p-4"
+          className="absolute inset-0 overflow-hidden rounded-[22px]
+            border border-[#efc7d2]
+            bg-[#fff0f4]
+            p-4"
           style={{
             backfaceVisibility: "hidden",
             transform: "rotateY(180deg)",
           }}>
           <p className="text-center font-hand text-sm text-[#c95778]">
-            your shelf ♡
+            your little shelf ♡
           </p>
 
           {preview.length > 0 ? (
-            <div className="mt-2 flex -space-x-3 justify-center">
+            <div className="mt-2 flex justify-center -space-x-3">
               {preview.map((book, i) => (
                 <div
                   key={book.id}
-                  className="h-14 w-10 shrink-0 overflow-hidden rounded-md border-2 border-white shadow-md"
+                  className="h-14 w-10 shrink-0 overflow-hidden rounded-md
+                    border-2 border-white shadow-md"
                   style={{
-                    transform: `rotate(${(i - (preview.length - 1) / 2) * 9}deg)`,
+                    transform: `rotate(${
+                      (i - (preview.length - 1) / 2) * 9
+                    }deg)`,
                     zIndex: preview.length - i,
                   }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -747,6 +1091,349 @@ function TotalMilestone({ value, books }: { value: number; books: Book[] }) {
           <p className="mt-3 text-center text-[10px] text-[#49373d]/35">
             tap to flip back
           </p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ===============================================================
+   LATEST READ — simple, the book is already visible on the front
+================================================================ */
+
+// function LatestReadMilestone({ book }: { book: Book | undefined }) {
+//   return (
+//     <div className="group relative overflow-hidden rounded-[22px] border border-[#f0dce2] bg-white/65 p-5 transition-all duration-300 hover:-translate-y-1">
+//       <div className="absolute -right-5 -top-5 text-6xl opacity-[0.035]">
+//         🌙
+//       </div>
+
+//       <span className="text-xl">🌙</span>
+
+//       {book ? (
+//         <>
+//           <p className="mt-3 line-clamp-2 font-serif text-base leading-snug">
+//             {book.title}
+//           </p>
+//           <p className="mt-1 text-[11px] text-[#49373d]/40">
+//             latest read · {book.author}
+//           </p>
+//         </>
+//       ) : (
+//         <>
+//           <p className="mt-3 font-serif text-lg text-[#49373d]/25">—</p>
+//           <p className="mt-1 text-[11px] text-[#49373d]/40">
+//             nothing finished yet
+//           </p>
+//         </>
+//       )}
+//     </div>
+//   );
+// }
+
+function LatestReadMilestone({ book }: { book: Book | undefined }) {
+  const [flipped, setFlipped] = useState(false);
+
+  return (
+    <button
+      onClick={() => book && setFlipped((f) => !f)}
+      aria-label="See your latest read"
+      className="relative block w-full text-left [perspective:900px]">
+      <div
+        className="relative h-[150px] transition-transform duration-500"
+        style={{
+          transformStyle: "preserve-3d",
+          transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+        }}>
+        {/* =====================================================
+            FRONT
+        ===================================================== */}
+        <div
+          className="group absolute inset-0 overflow-hidden rounded-[22px]
+            border border-[#f0dce2]
+            bg-white/65
+            p-5
+            transition-colors duration-300
+            hover:bg-[#fff0f4]"
+          style={{ backfaceVisibility: "hidden" }}>
+          {/* decorative moon */}
+          <div className="absolute -right-5 -top-5 text-6xl opacity-[0.035]">
+            🌙
+          </div>
+
+          <span className="text-xl">🌙</span>
+
+          {book ? (
+            <>
+              <p className="mt-3 font-serif text-[17px] leading-snug text-[#49373d]">
+                The last book to
+                <br />
+                <span className="italic text-[#d96b87]">become a memory.</span>
+              </p>
+
+              <p className="font-hand absolute bottom-2 right-3 text-xs text-[#d96b87]/60">
+                turn the page → ✨
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-4 font-serif text-lg text-[#49373d]/30">
+                A new memory
+              </p>
+
+              <p className="mt-1 text-[11px] text-[#49373d]/40">
+                is waiting to be made ♡
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* =====================================================
+            BACK
+        ===================================================== */}
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center
+            overflow-hidden rounded-[22px]
+            border border-[#efc7d2]
+            bg-[#fff0f4]
+            p-4"
+          style={{
+            backfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
+          }}>
+          {book && (
+            <>
+              {/* cover */}
+              <div
+                className="h-16 w-12 overflow-hidden rounded-md
+                  border-2 border-white shadow-md">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={book.coverUrl || FALLBACK_COVER}
+                  alt={book.title}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+
+              {/* title */}
+              <p className="mt-2 line-clamp-1 max-w-[90%] text-center font-serif text-sm">
+                {book.title}
+              </p>
+
+              {/* author */}
+              <p className="font-hand mt-0.5 line-clamp-1 text-xs text-[#c95778]">
+                by {book.author}
+              </p>
+
+              <p className="mt-2 text-center text-[10px] text-[#49373d]/35">
+                tap to flip back
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+/* ===============================================================
+   QUICKEST READ — flips to reveal which book earned it
+================================================================ */
+
+function QuickestReadMilestone({
+  entry,
+}: {
+  entry: { book: Book; days: number } | undefined;
+}) {
+  const [flipped, setFlipped] = useState(false);
+
+  return (
+    <button
+      onClick={() => entry && setFlipped((f) => !f)}
+      aria-label="See your fastest read"
+      className="relative block w-full text-left [perspective:900px]">
+      <div
+        className="relative h-[150px] transition-transform duration-500"
+        style={{
+          transformStyle: "preserve-3d",
+          transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+        }}>
+        {/* FRONT */}
+        <div
+          className="group absolute inset-0 overflow-hidden rounded-[22px]
+            border border-[#f0dce2]
+            bg-white/65
+            p-5
+            transition-colors duration-300
+            hover:bg-[#fff0f4]"
+          style={{ backfaceVisibility: "hidden" }}>
+          <div className="absolute -right-5 -top-5 text-6xl opacity-[0.035]">
+            ⚡
+          </div>
+
+          <span className="text-xl">⚡</span>
+
+          {entry ? (
+            <>
+              <p className="mt-3 font-serif text-[17px] leading-snug">
+                A story that
+                <br />
+                <span className="italic text-[#d96b87]">
+                  flew by in <span className="bold">{entry.days}</span>{" "}
+                  {entry.days === 1 ? "day" : "days"}
+                </span>
+              </p>
+
+              <p className="font-hand absolute bottom-2 right-3 text-xs text-[#d96b87]/60">
+                tap to discover ✨
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-3 font-serif text-[17px] leading-snug text-[#49373d]/50">
+                Some stories
+                <br />
+                <span className="italic text-[#d96b87]">take their time.</span>
+              </p>
+
+              <p className="mt-1 text-[10px] text-[#49373d]/35">
+                finish a book with dates to unlock this
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* BACK */}
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center
+            overflow-hidden rounded-[22px]
+            border border-[#efc7d2]
+            bg-[#fff0f4]
+            p-4"
+          style={{
+            backfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
+          }}>
+          {entry ? (
+            <>
+              <div className="h-16 w-12 overflow-hidden rounded-md border-2 border-white shadow-md">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={entry.book.coverUrl || FALLBACK_COVER}
+                  alt={entry.book.title}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+
+              <p className="mt-2 line-clamp-1 max-w-[90%] text-center font-serif text-sm">
+                {entry.book.title}
+              </p>
+
+              <p className="font-hand mt-0.5 text-xs text-[#c95778]">
+                {entry.days} {entry.days === 1 ? "day" : "days"} flat
+              </p>
+
+              <p className="mt-2 text-[10px] text-[#49373d]/35">
+                tap to flip back
+              </p>
+            </>
+          ) : null}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ===============================================================
+   TOP RATED — flips to reveal which book earned it
+================================================================ */
+
+function TopRatedMilestone({ book }: { book: Book | undefined }) {
+  const [flipped, setFlipped] = useState(false);
+
+  return (
+    <button
+      onClick={() => book && setFlipped((f) => !f)}
+      aria-label="See your top rated book"
+      className="relative block w-full text-left [perspective:900px]">
+      <div
+        className="relative h-[150px] transition-transform duration-500"
+        style={{
+          transformStyle: "preserve-3d",
+          transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+        }}>
+        {/* FRONT */}
+        <div
+          className="group absolute inset-0 overflow-hidden rounded-[22px]
+            border border-[#efc7d2]
+            bg-[#fff0f4]
+            p-5
+            transition-colors duration-300
+            hover:bg-[#ffeaf1]"
+          style={{ backfaceVisibility: "hidden" }}>
+          <div className="absolute -right-5 -top-5 text-6xl opacity-[0.035]">
+            ⭐
+          </div>
+
+          <span className="text-xl">⭐</span>
+
+          {book ? (
+            <>
+              <p className="mt-3 font-serif text-[17px] leading-snug">
+                The one that
+                <br />
+                <span className="italic text-[#d96b87]">stayed with you.</span>
+              </p>
+
+              <p className="font-hand absolute bottom-2 right-3 text-xs text-[#d96b87]/60">
+                reveal it → ✨
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-3 font-serif text-[17px] leading-snug text-[#49373d]/35">
+                A favourite
+                <br />
+                <span className="italic">is waiting to shine.</span>
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* BACK */}
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center
+            overflow-hidden rounded-[22px]
+            border border-[#efc7d2]
+            bg-white/70
+            p-4"
+          style={{
+            backfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
+          }}>
+          {book ? (
+            <>
+              <div className="h-16 w-12 overflow-hidden rounded-md border-2 border-white shadow-md">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={book.coverUrl || FALLBACK_COVER}
+                  alt={book.title}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+
+              <p className="mt-2 line-clamp-1 max-w-[90%] text-center font-serif text-sm">
+                {book.title}
+              </p>
+
+              <p className="font-hand mt-0.5 text-xs text-[#c95778]">
+                {"⭐".repeat(book.rating)}
+              </p>
+
+              <p className="mt-2 text-[10px] text-[#49373d]/35">
+                tap to flip back
+              </p>
+            </>
+          ) : null}
         </div>
       </div>
     </button>

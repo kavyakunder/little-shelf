@@ -388,12 +388,16 @@ export default function BookModal({
                         </div>
                       )}
 
-                      {readingDuration && (
-                        <div className="flex justify-between gap-4">
-                          <span>Reading time</span>
-                          <span className="text-ink font-medium">
-                            {readingDuration}
-                          </span>
+                      {book.readingDays != null && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-ink/35 mb-2">
+                            Reading time
+                          </p>
+
+                          <p className="text-sm text-ink">
+                            {book.readingDays}{" "}
+                            {book.readingDays === 1 ? "day" : "days"}
+                          </p>
                         </div>
                       )}
                     </div>

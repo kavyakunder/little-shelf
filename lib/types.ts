@@ -13,7 +13,7 @@ export interface Book {
   dateFinished?: string; // ISO date
   createdAt: string;
   updatedAt: string;
-  readingDays?: number;
+  readingDays?: number | undefined;
   readingDaysUnit?: "days" | "weeks" | "months" | string;
 }
 
