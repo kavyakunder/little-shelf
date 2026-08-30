@@ -1,4 +1,4 @@
-# 📚 Little Shelf — Personal Book Tracker (Next.js)
+# 📚 Little Shelf — Personal Book Tracker (Next.js).
 
 A single full-stack TypeScript app — the frontend and the "backend" both live in one Next.js
 project. Pages are React (App Router), and the API is Next.js Route Handlers under `app/api`.
