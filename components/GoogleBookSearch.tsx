@@ -38,7 +38,6 @@ export default function GoogleBookSearch({ onSelect }: GoogleBookSearchProps) {
 
   return (
     <div className="space-y-3">
-      djdfcd
       <div>
         <label className="text-sm font-medium text-ink">Find your book</label>
 

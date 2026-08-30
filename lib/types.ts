@@ -13,6 +13,8 @@ export interface Book {
   dateFinished?: string; // ISO date
   createdAt: string;
   updatedAt: string;
+  readingDays?: number;
+  readingDaysUnit?: "days" | "weeks" | "months" | string;
 }
 
 export type NewBookInput = Omit<Book, "id" | "createdAt" | "updatedAt">;
