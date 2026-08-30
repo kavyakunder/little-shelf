@@ -1,20 +1,23 @@
 export const HARDCODED_RECOMMENDATIONS = [
   {
-    title: "Murder on the Orient Express",
-    author: "Agatha Christie",
-    coverUrl: "",
-    reason: "since And Then There Were None was a hit",
+    title: "The Family Upstairs",
+    author: "Lisa Jewell",
+    coverUrl:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-xAjYNsa1d9-867u7KlIdXSXCRO0SiyGYDLtOnjj0ew&s=10",
+    reason: "dark family secrets with twists you won't see coming",
   },
   {
-    title: "The Silent Patient",
-    author: "Alex Michaelides",
-    coverUrl: "",
-    reason: "a twisty psychological thriller, like The Housemaid",
+    title: "The Girl with the Dragon Tattoo",
+    author: "Stieg Larsson",
+    coverUrl:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7FtqRBBxCShLRTYc5sdOEsE_Raqqp7_xTNJj5AQaFSw&s=10",
+    reason: "a dark psychological thrille",
   },
   {
-    title: "Gone Girl",
-    author: "Gillian Flynn",
-    coverUrl: "",
-    reason: "another jaw-dropping-twist kind of read",
+    title: "The Inmate",
+    author: "Freida McFadden",
+    coverUrl:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQo_i8DOVYtFrLR8adFZ-LshoP-ngs5jWJSsBODshg72Q&s=10",
+    reason: "an addictive thriller with secrets from the past",
   },
 ];
