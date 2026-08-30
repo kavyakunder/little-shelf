@@ -15,6 +15,7 @@ export interface Book {
   updatedAt: string;
   readingDays?: number | undefined;
   readingDaysUnit?: "days" | "weeks" | "months" | string;
+  spoiler?: string;
 }
 
 export type NewBookInput = Omit<Book, "id" | "createdAt" | "updatedAt">;

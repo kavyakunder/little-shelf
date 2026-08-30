@@ -520,17 +520,18 @@ export default function BookModal({
                   </p>
                 </div>
 
-                {extendedBook.review ? (
+                {book.notes ? (
                   <p
                     className="font-serif
                       italic
                       text-[15px]
                       text-ink/80
                       leading-7">
-                    “{extendedBook.review}”
+                    “{book.notes}”
                   </p>
                 ) : (
                   <p className="text-sm text-ink/35 leading-6">
+                    {}
                     You haven't written your spoiler-free review yet.
                   </p>
                 )}
@@ -725,13 +726,13 @@ export default function BookModal({
                       </button>
                     </div>
 
-                    {extendedBook.spoilerReview ? (
+                    {book?.spoiler ? (
                       <p
                         className="font-serif
                           text-sm
                           leading-6
                           text-ink/75">
-                        {extendedBook.spoilerReview}
+                        {book.spoiler}
                       </p>
                     ) : (
                       <p className="text-sm text-ink/35">
