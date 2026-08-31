@@ -39,7 +39,7 @@ export default function GoogleBookSearch({ onSelect }: GoogleBookSearchProps) {
   return (
     <div className="space-y-3">
       <div>
-        <label className="text-sm font-medium text-ink">Find your book</label>
+        <label className="text-sm font-medium text-ink">Find my book</label>
 
         <p className="text-xs text-ink/50 mt-1">
           Search Google Books and select a book to automatically fill in its
