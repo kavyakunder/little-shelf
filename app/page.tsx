@@ -225,31 +225,33 @@ export default function Home() {
           HEADER
       ========================================================= */}
 
-      <header className="sticky top-0 z-30 border-b border-[#f1dce2] bg-[#fff8fa]/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="flex h-11 w-11 rotate-[-5deg] items-center justify-center rounded-[16px] bg-[#d96b87] text-2xl text-white shadow-[0_5px_18px_rgba(217,107,135,0.25)]">
-                📖
-              </div>
-
-              <span className="absolute -right-2 -top-2 text-xs">✨</span>
-            </div>
-
-            <div>
-              <h1 className="font-serif text-2xl tracking-tight">
-                Little Shelf
-              </h1>
-
-              <p className="text-[11px] text-[#49373d]/40">
-                a home for your stories ♡
-              </p>
-            </div>
-          </div>
+<header className="sticky top-0 z-30 border-b border-[#f1dce2] bg-[#fff8fa]/80 backdrop-blur-xl">
+  <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+    {/* Logo */}
+    <div className="flex items-center gap-3.5">
+      <div className="relative shrink-0">
+        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[18px] bg-[#d96b87] shadow-[0_5px_18px_rgba(217,107,135,0.25)] ring-1 ring-white/40 transition-transform duration-300 hover:-translate-y-0.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="Little Shelf logo"
+            className="h-full w-full object-cover"
+          />
         </div>
-      </header>
+        <span className="absolute -right-1.5 -top-1.5 text-sm">✨</span>
+      </div>
 
+      <div>
+        <h1 className="font-serif text-2xl leading-tight tracking-tight text-[#49373d]">
+          Little Shelf
+        </h1>
+        <p className="font-hand text-sm leading-none text-[#c95778]">
+          a home for my stories ♡
+        </p>
+      </div>
+    </div>
+  </div>
+</header>
       {/* =========================================================
           MAIN
       ========================================================= */}
@@ -265,12 +267,12 @@ export default function Home() {
             <div>
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#f1d2dc] bg-[#fff0f4] px-3.5 py-1.5 text-xs font-medium text-[#c95778]">
                 <span>🌸</span>
-                your little reading world
+                my little reading world
                 <span>♡</span>
               </div>
 
               <h2 className="max-w-2xl font-serif text-5xl leading-[0.98] tracking-tight md:text-6xl">
-                Stories you
+                Stories I
                 <br />
                 <span className="italic text-[#d96b87]">
                   never want to forget.
@@ -290,7 +292,7 @@ export default function Home() {
                     setShowForm(true);
                   }}
                   className="rounded-full bg-[#49373d] px-5 py-2.5 text-sm text-white transition hover:-translate-y-0.5 hover:bg-[#382a2f]">
-                  + Add your next story
+                  + Add my next story
                 </button>
 
                 <button
@@ -322,12 +324,20 @@ export default function Home() {
         FRONT — the room, unchanged, still tilts on mouse move
     ============================================================ */}
                 <div
-                  className="absolute inset-0 overflow-hidden rounded-[38px] border border-[#f0d5dd] bg-[#fdebef] shadow-[0_20px_50px_rgba(217,107,135,0.10)]"
+                  className="absolute inset-0 cursor-pointer overflow-hidden rounded-[38px] border border-[#f0d5dd] bg-[#fdebef] shadow-[0_20px_50px_rgba(217,107,135,0.10)]"
                   style={{
                     backfaceVisibility: "hidden",
                     transformStyle: "preserve-3d",
                     transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
                     transition: "transform 150ms ease-out",
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="See the cover of what you're currently reading"
+                  onClick={() => setRoomFlipped(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ")
+                      setRoomFlipped(true);
                   }}
                   onMouseMove={(e) => !roomFlipped && handleRoomMouseMove(e)}
                   onMouseLeave={handleRoomMouseLeave}>
@@ -365,12 +375,9 @@ export default function Home() {
                     <div className="absolute -bottom-5 right-2 h-7 w-3 bg-[#ad6c7e]" />
                   </div>
 
-                  {/* book — click it to see what you're actually reading */}
-                  <button
-                    type="button"
-                    onClick={() => setRoomFlipped(true)}
-                    aria-label="See the cover of what you're currently reading"
-                    className="absolute bottom-10 left-1/2 cursor-pointer transition-transform hover:scale-110"
+                  {/* book — no longer needs its own click handler, the whole card has it */}
+                  <div
+                    className="absolute bottom-10 left-1/2"
                     style={{
                       animation: "book-breathe 5s ease-in-out infinite",
                     }}>
@@ -378,7 +385,7 @@ export default function Home() {
                       <div className="absolute left-2 top-3 h-1 w-9 rounded bg-[#e7b2c0]" />
                       <div className="absolute left-2 top-6 h-1 w-6 rounded bg-[#f0ced7]" />
                     </div>
-                  </button>
+                  </div>
 
                   {/* drifting dust motes */}
                   <span
@@ -411,10 +418,18 @@ export default function Home() {
         BACK — the actual cover of what you're currently reading
     ============================================================ */}
                 <div
-                  className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden rounded-[38px] border border-[#f0d5dd] bg-[#fdebef] p-6 shadow-[0_20px_50px_rgba(217,107,135,0.10)]"
+                  className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[38px] border border-[#f0d5dd] bg-[#fdebef] p-6 shadow-[0_20px_50px_rgba(217,107,135,0.10)]"
                   style={{
                     backfaceVisibility: "hidden",
                     transform: "rotateY(180deg)",
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Flip back to the room"
+                  onClick={() => setRoomFlipped(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ")
+                      setRoomFlipped(false);
                   }}>
                   <span
                     aria-hidden
@@ -456,18 +471,15 @@ export default function Home() {
                     </>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => setRoomFlipped(false)}
-                    className="mt-5 rounded-full border border-[#efd6de] bg-white/70 px-4 py-1.5 text-xs text-[#c95778] transition hover:-translate-y-0.5 hover:bg-white">
-                    ← back to the room
-                  </button>
+                  <p className="font-hand mt-5 text-xs text-[#c95778]/60">
+                    tap anywhere to flip back
+                  </p>
                 </div>
               </div>
 
-              <div className="absolute -bottom-3 -right-3 rounded-2xl border border-[#f0d5dd] bg-white px-4 py-2 shadow-md">
+              <div className="pointer-events-none absolute -bottom-3 -right-3 rounded-2xl border border-[#f0d5dd] bg-white px-4 py-2 shadow-md">
                 <span className="font-hand text-sm text-[#49373d]/60">
-                  {"currently reading ♡"}
+                  {"flip the card to see currently reading ♡"}
                 </span>
               </div>
             </div>
@@ -605,7 +617,7 @@ export default function Home() {
                 </p>
 
                 <h3 className="mt-1 font-serif text-3xl">
-                  Your bookshelf <span className="text-[#e6a2b4]">♡</span>
+                  My bookshelf <span className="text-[#e6a2b4]">♡</span>
                 </h3>
               </div>
 
@@ -736,7 +748,7 @@ function RecommendationModal({
 
           {!loading && (
             <p className="mt-1 text-xs text-[#49373d]/40">
-              Three little stories that might belong on your shelf next ♡
+              Three little stories that might belong on my shelf next ♡
             </p>
           )}
         </div>
@@ -1137,7 +1149,7 @@ function LatestReadMilestone({ book }: { book: Book | undefined }) {
   return (
     <button
       onClick={() => book && setFlipped((f) => !f)}
-      aria-label="See your latest read"
+      aria-label="See my latest read"
       className="relative block w-full text-left [perspective:900px]">
       <div
         className="relative h-[150px] transition-transform duration-500"
@@ -1245,7 +1257,6 @@ function QuickestReadMilestone({
   entry: { book: Book; days: number } | undefined;
 }) {
   const [flipped, setFlipped] = useState(false);
-
   return (
     <button
       onClick={() => entry && setFlipped((f) => !f)}
